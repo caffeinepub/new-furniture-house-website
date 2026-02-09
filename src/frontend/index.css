@@ -1,0 +1,4 @@
+/* Theme tokens are defined in frontend/src/index.css - this file contains only Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

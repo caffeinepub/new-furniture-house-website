@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 16,
+  "summary": "A full-stack Internet Computer (ICP) e-commerce storefront for a furniture shop (“New Furniture House”). The frontend is a React SPA that uses Internet Identity for authentication and React Query for data fetching/mutations, with a refreshed Tailwind/shadcn-ui based component set and updated branding assets. The backend is a Motoko canister providing role-based access control (admin/user/guest), product catalog management (including image/video media blobs), shopping cart/checkout-driven order creation, order administration (status updates), store information, and basic analytics (product stats, wishlists, featured products, system stats). It also includes a blob-storage management mixin and an upgrade migration that adds timestamps to products and orders. The repo now includes a build-template scaffolding (Docker/deploy config, scripts, and lint rules) to support standardized builds and deployment.",
+  "existing_features": [
+    {
+      "id": "IF-1",
+      "title": "Internet Identity authentication (login/logout) with persisted delegation",
+      "synonyms": [
+        "II auth",
+        "DFINITY AuthClient login"
+      ],
+      "description": "Provides an InternetIdentityProvider that initializes an AuthClient, loads any stored identity on mount, supports login with a long max TTL, and supports logout/clear with status flags for UI states.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "Backend actor creation with identity binding and automatic access-control initialization",
+      "synonyms": [
+        "ICP actor hook",
+        "useActor"
+      ],
+      "description": "Creates an anonymous or authenticated canister actor depending on identity; for authenticated users it calls `_initializeAccessControlWithSecret` using a secret token from the URL hash/session, and invalidates/refetches dependent React Query caches when the actor changes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "User profile storage and first-time profile setup modal",
+      "synonyms": [
+        "Profile onboarding",
+        "Caller profile"
+      ],
+      "description": "Backend supports saving and fetching the caller’s profile; frontend detects missing profile after login and forces a modal to collect the user’s name and save it.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "Role-based access control (admin/user/guest) with secret-based bootstrap",
+      "synonyms": [
+        "Access control",
+        "Admin bootstrap token"
+      ],
+      "description": "Motoko AccessControl assigns the first eligible caller as admin when the provided secret matches the `CAFFEINE_ADMIN_TOKEN` env var; others become users. Provides role checks, admin detection, and admin-only role assignment.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Product catalog querying (single, all, active)",
+      "synonyms": [
+        "Product listing",
+        "Catalog API"
+      ],
+      "description": "Backend stores products with pricing, offer, active flag, media arrays, and timestamps; exposes queries for product by id, all products, and active products. Frontend displays active products on the homepage and loads individual products for the detail page.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "Admin product management (add/update fields and activation)",
+      "synonyms": [
+        "Product CRUD (admin)",
+        "Inventory management"
+      ],
+      "description": "Admin-only backend methods addProduct and updateProduct support creating and editing name/description/price/offer and toggling isActive. Frontend Admin Panel provides dialogs/forms for these actions.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "Product media management (images/videos) with blob uploads and progress UI",
+      "synonyms": [
+        "Media upload",
+        "Product gallery upload"
+      ],
+      "description": "Admin can append images/videos to a product by fetching current media and calling updateProductMedia. Frontend uses ExternalBlob.fromBytes().withUploadProgress to display upload progress and then refreshes product/product lists.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Shopping cart state and cart drawer UI",
+      "synonyms": [
+        "Cart management",
+        "Mini-cart"
+      ],
+      "description": "Frontend maintains cart state in App, supports add, remove, and quantity updates. Header shows cart count, a cart drawer with item controls, totals, and a checkout CTA.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-9",
+      "title": "Product detail page with image gallery, video playback, and quantity selection",
+      "synonyms": [
+        "PDP",
+        "Product page"
+      ],
+      "description": "Displays product details, offer badge, selectable image thumbnails, video thumbnails opening a modal player, quantity selector, and actions to add to cart or buy now.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-10",
+      "title": "Checkout flow and order creation (pay-on-delivery)",
+      "synonyms": [
+        "Place order",
+        "Checkout form"
+      ],
+      "description": "Checkout page collects name/phone/address, validates authentication, generates an order id, converts cart quantities to BigInt/Nat-compatible values, and calls createOrder. UI includes order summary and pay-on-delivery messaging.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-11",
+      "title": "Order querying (my orders and admin all orders)",
+      "synonyms": [
+        "Order history",
+        "Order list"
+      ],
+      "description": "Backend supports getMyOrders (caller-specific) and getAllOrders (admin-only). Frontend exposes a My Orders page for authenticated users and an Admin orders tab for administrators.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-12",
+      "title": "Admin order status updates",
+      "synonyms": [
+        "Order management",
+        "Update order status"
+      ],
+      "description": "Admin-only backend endpoint updateOrderStatus allows changing order status among pending/processing/delivered/cancelled. Frontend Admin Panel provides a status dropdown and persists changes via mutation with cache invalidation.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-13",
+      "title": "Store information API and marketing homepage sections",
+      "synonyms": [
+        "Store profile",
+        "Homepage hero/map"
+      ],
+      "description": "Backend returns StoreInfo (name, hours, rating, maps link, contact). Frontend home page renders hero banner, location/hours/rating cards, contact CTAs, and an embedded Google Maps iframe.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-14",
+      "title": "Product stats tracking (sales and wishlists counts)",
+      "synonyms": [
+        "Analytics counters",
+        "Product metrics"
+      ],
+      "description": "Backend maintains ProductStats per product and increments sales on order creation and wishlists on wishlist additions; exposes APIs to fetch stats per product or in bulk.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-15",
+      "title": "Wishlist management",
+      "synonyms": [
+        "Favorites",
+        "Saved items"
+      ],
+      "description": "Backend supports addToWishlist, removeFromWishlist, and getWishlist for the caller using a Set<Text> per principal.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-16",
+      "title": "Featured products configuration",
+      "synonyms": [
+        "Featured listing",
+        "Homepage featured products"
+      ],
+      "description": "Admin can set a list of featured product IDs and query featured products, which resolves IDs to full product objects.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-17",
+      "title": "Admin system statistics endpoint",
+      "synonyms": [
+        "Dashboard stats",
+        "System analytics"
+      ],
+      "description": "Provides an admin-only query returning aggregate metrics including total products, total orders, total sales, active products count, and pending orders count.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-18",
+      "title": "Blob storage maintenance endpoints (gateway authorization, dead-blob pruning, cycles refill)",
+      "synonyms": [
+        "Storage mixin",
+        "Caffeine storage management"
+      ],
+      "description": "Includes canister methods for updating authorized gateway principals from a cashier canister, listing/pruning dead blobs, checking blob liveness, forcing GC, and topping up a cashier account with available cycles (cashier-guarded).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-19",
+      "title": "State migration on upgrade to add timestamps",
+      "synonyms": [
+        "Upgrade migration",
+        "Schema migration"
+      ],
+      "description": "Migration transforms older product/order records to include createdAt/updatedAt using Time.now during upgrade, preserving existing maps and other state.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-20",
+      "title": "Storefront UI refresh with category strip and updated branding assets",
+      "synonyms": [
+        "CategoryStrip",
+        "Homepage category navigation",
+        "Branding refresh"
+      ],
+      "description": "Frontend storefront UI was updated to include a category strip/navigation element and new generated branding imagery (hero background, wordmark, and category icons) used in the public assets.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-hash-based-routing-in-the-react-app-so-the-admin-panel-is-reachable-via-a-stable-url-e-g-admin-and-not-only-via-in-memory-currentview-state-supported-routes-must-include-at-minimum-home-admin-orders-checkout-and-product-productid",
+      "title": "Implement hash-based routing in the React app so the Admin Panel is reachable via a stable URL (e.g., `#/admin`) and not only via in-memory `currentView` state. Supported routes must include at minimum: `#/` (home), `#/admin`, `#/orders`, `#/checkout`, and `#/product/<productId>`.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-all-in-app-navigation-that-currently-uses-setcurrentview-header-footer-buttons-and-any-other-view-transitions-to-also-update-the-url-hash-to-the-corresponding-route-so-users-can-bookmark-share-the-admin-panel-and-other-pages",
+      "title": "Update all in-app navigation that currently uses `setCurrentView(...)` (Header/Footer buttons and any other view transitions) to also update the URL hash to the corresponding route so users can bookmark/share the Admin Panel and other pages.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-a-user-navigates-to-admin-and-they-are-not-authenticated-or-not-an-admin-render-a-clear-persistent-page-level-message-not-just-a-toast-explaining-why-access-is-blocked-with-an-obvious-action-to-return-to-home-and-a-login-action-if-unauthenticated",
+      "title": "When a user navigates to `#/admin` and they are not authenticated or not an admin, render a clear, persistent page-level message (not just a toast) explaining why access is blocked, with an obvious action to return to Home and a Login action if unauthenticated.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-simple-not-found-view-for-unknown-hashes-e-g-does-not-exist-that-tells-the-user-the-page-was-not-found-and-provides-a-button-to-go-back-to-home",
+      "title": "Add a simple Not Found view for unknown hashes (e.g., `#/does-not-exist`) that tells the user the page was not found and provides a button to go back to Home.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [],
+  "architecturalNotes": [
+    "ICP canister backend written in Motoko with in-canister state held in mo:core Map/Set structures (products, orders, user profiles, wishlists, stats).",
+    "Authorization is modularized via a mixin (MixinAuthorization) wrapping an AccessControl module; admin initialization relies on an environment variable secret and a user-provided token.",
+    "Blob storage operations are separated into a blob-storage module plus mixin (MixinStorage) that exposes gateway authorization updates, dead-blob pruning, and cycles refill interactions with a cashier canister.",
+    "System upgrade safety is addressed via a migration module (migration.mo) invoked via `(with migration = Migration.run)` to transform older stable state into the newer schema with createdAt/updatedAt fields.",
+    "Frontend uses React Query (@tanstack/react-query) for caching, invalidation, and mutations; actor creation is identity-aware and triggers broad query invalidation/refetch on identity changes.",
+    "Frontend authentication is encapsulated in an InternetIdentityProvider context built on @dfinity/auth-client and DelegationIdentity validation.",
+    "Admin token is passed client-side via a secret URL hash parameter and persisted in sessionStorage; the URL hash is cleared to reduce token leakage.",
+    "Frontend UI stack expanded with Tailwind + shadcn-ui component primitives (large set of reusable UI components added under build-template/src/frontend/src/components/ui).",
+    "Build-template scaffolding added (Dockerfile, deploy scripts, icp.yaml, workspace configs) to standardize build and deployment across environments.",
+    "Frontend linting extended with custom ESLint rules (e.g., prohibiting BigInt in React Query keys; enforcing InternetIdentityProvider usage).",
+    "Asset pipeline scripts added for image resizing and pruning unused images (build-template/scripts/resize-images.js, prune-unused-images.js)."
+  ],
+  "knownIssues": [
+    "Backend: updateOrderStatus updates only `status` and does not update `updatedAt`, leaving timestamps stale.",
+    "Backend: createOrder does not prevent anonymous principals; an anonymous caller could create orders unless prevented elsewhere.",
+    "Backend: productStats `views` is defined but never incremented anywhere; analytics are incomplete.",
+    "Backend: wishlist stats can become inaccurate: addToWishlist increments wishlists count without checking if the item was already wishlisted; removeFromWishlist does not decrement the wishlists count.",
+    "Backend: getAllProductStats is not admin-protected (may be unintended if stats are meant to be internal).",
+    "Blob storage: environment variable name appears misspelled/inconsistent (`CAFFFEINE_STORAGE_CASHIER_PRINCIPAL` has triple 'F'); this can cause runtime traps if deployment uses a different spelling.",
+    "Frontend: there are two different `index.css` files shown in the tree (one in frontend root and one in src) with different CSS variable palettes; this may be duplication or a merge artifact and could cause styling confusion depending on build setup.",
+    "Frontend: Admin Panel entry point/navigation is not discoverable (user reports \"Admin panel not found\"), indicating the admin route/link may be missing, hidden by auth/role gating, or not rendered in the current build."
+  ],
+  "isFixRequest": true,
+  "generatedImages": [
+    {
+      "filename": "frontend/public/assets/generated/furniture-category-icons.dim_512x512.png",
+      "description": "Generated category icon sprite/asset for storefront category strip.",
+      "targetWidth": 512,
+      "targetHeight": 512
+    },
+    {
+      "filename": "frontend/public/assets/generated/mobel-hero-bg.dim_1920x900.png",
+      "description": "Generated hero background image for homepage branding.",
+      "targetWidth": 1920,
+      "targetHeight": 900
+    },
+    {
+      "filename": "frontend/public/assets/generated/new-furniture-house-wordmark.dim_900x220.png",
+      "description": "Generated wordmark/logo image for site branding.",
+      "targetWidth": 900,
+      "targetHeight": 220
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "New Furniture House Website",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0,
+  "requiresBackendChanges": false,
+  "requiresFrontendChanges": true
+}
