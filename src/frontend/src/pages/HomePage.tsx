@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapPin, Phone, Star, Clock, Navigation } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { useGetActiveProducts, useGetStoreInfo } from '../hooks/useQueries';
+import { useGetActiveProducts, useGetStoreInfo, useGetAllCategories } from '../hooks/useQueries';
 import { Skeleton } from '../components/ui/skeleton';
 import type { CartItem } from '../App';
 import CategoryStrip from '../components/storefront/CategoryStrip';
@@ -16,6 +16,7 @@ interface HomePageProps {
 export default function HomePage({ onViewProduct, onAddToCart, onBuyNow }: HomePageProps) {
   const { data: products, isLoading: productsLoading } = useGetActiveProducts();
   const { data: storeInfo } = useGetStoreInfo();
+  const { data: categories } = useGetAllCategories();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleAddToCart = (product: any) => {
@@ -40,13 +41,16 @@ export default function HomePage({ onViewProduct, onAddToCart, onBuyNow }: HomeP
     });
   };
 
-  // Filter products by category
+  // Normalize category for consistent comparison
+  const normalizeCategory = (category: string | undefined | null): string => {
+    if (!category || category.trim() === '') return 'Uncategorized';
+    return category.trim().toLowerCase();
+  };
+
+  // Filter products by category using real product.category field
   const filteredProducts = products?.filter((product) => {
     if (!selectedCategory) return true;
-    // Simple category matching based on product name
-    const productName = product.name.toLowerCase();
-    const category = selectedCategory.toLowerCase();
-    return productName.includes(category);
+    return normalizeCategory(product.category) === normalizeCategory(selectedCategory);
   });
 
   return (
@@ -131,7 +135,11 @@ export default function HomePage({ onViewProduct, onAddToCart, onBuyNow }: HomeP
               Explore our curated collection of furniture designed to transform your living spaces
             </p>
           </div>
-          <CategoryStrip selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
+          <CategoryStrip
+            categories={categories || []}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
         </div>
       </section>
 

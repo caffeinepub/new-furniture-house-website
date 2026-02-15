@@ -9,6 +9,7 @@ import Set "mo:core/Set";
 import Iter "mo:core/Iter";
 import AccessControl "authorization/access-control";
 
+
 import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
@@ -31,6 +32,7 @@ actor {
     description : Text;
     price : Nat;
     offer : ?Text;
+    category : Text;
     images : [Storage.ExternalBlob];
     videos : [Storage.ExternalBlob];
     isActive : Bool;
@@ -86,6 +88,10 @@ actor {
     wishlists : Nat;
   };
 
+  func isEmptyOrWhitespace(s : Text) : Bool {
+    s.chars().all(func(c) { c == ' ' or c == '\t' or c == '\n' or c == '\r' });
+  };
+
   var storeInfo = {
     name = "New Furniture House";
     location = "Nager Bazar, Dumdum";
@@ -102,23 +108,50 @@ actor {
   let productStatsMap = Map.empty<Text, ProductStats>();
   let wishlists = Map.empty<Principal, Set.Set<Text>>();
   var featuredProductIds : [Text] = [];
+  let categoryMap = Map.empty<Text, Nat>();
 
   // Admin Authentication & Authorization
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Admin Checks
   func ensureAdmin(caller : Principal) {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Admin only");
     };
   };
 
-  // User Checks
   func ensureUser(caller : Principal) {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can perform this action");
     };
+  };
+
+  // Category Management
+  public shared ({ caller }) func addCategory(name : Text) : async () {
+    ensureAdmin(caller);
+    if (isEmptyOrWhitespace(name)) {
+      Runtime.trap("Category name cannot be empty");
+    };
+    if (categoryMap.containsKey(name)) {
+      Runtime.trap("Category already exists");
+    };
+    categoryMap.add(name, 0);
+  };
+
+  public shared ({ caller }) func deleteCategory(name : Text) : async () {
+    ensureAdmin(caller);
+    if (not categoryMap.containsKey(name)) {
+      Runtime.trap("Category does not exist");
+    };
+    let productsWithCategory : [Product] = productMap.values().toArray().filter(func(p) { p.category == name });
+    if (productsWithCategory.size() > 0) {
+      Runtime.trap("Cannot delete category with existing products");
+    };
+    categoryMap.remove(name);
+  };
+
+  public query func getAllCategories() : async [Text] {
+    categoryMap.keys().toArray();
   };
 
   // User Profile Management
@@ -142,8 +175,18 @@ actor {
   };
 
   // Product Management (Admin)
-  public shared ({ caller }) func addProduct(id : Text, name : Text, description : Text, price : Nat, offer : ?Text) : async () {
+  public shared ({ caller }) func addProduct(
+    id : Text,
+    name : Text,
+    description : Text,
+    price : Nat,
+    offer : ?Text,
+    category : Text,
+  ) : async () {
     ensureAdmin(caller);
+    if (not categoryMap.containsKey(category)) {
+      Runtime.trap("Category does not exist");
+    };
     let now = Time.now();
     let product : Product = {
       id;
@@ -151,6 +194,7 @@ actor {
       description;
       price;
       offer;
+      category;
       images = [];
       videos = [];
       isActive = true;
@@ -167,9 +211,13 @@ actor {
     description : Text,
     price : Nat,
     offer : ?Text,
+    category : Text,
     isActive : Bool,
   ) : async () {
     ensureAdmin(caller);
+    if (not categoryMap.containsKey(category)) {
+      Runtime.trap("Category does not exist");
+    };
     switch (productMap.get(id)) {
       case (null) { Runtime.trap("Product not found") };
       case (?existing) {
@@ -179,6 +227,7 @@ actor {
           description;
           price;
           offer;
+          category;
           images = existing.images;
           videos = existing.videos;
           isActive;
@@ -205,6 +254,7 @@ actor {
           description = product.description;
           price = product.price;
           offer = product.offer;
+          category = product.category;
           images;
           videos;
           isActive = product.isActive;
@@ -217,16 +267,23 @@ actor {
   };
 
   // Product Queries
-  public query ({ caller }) func getProduct(id : Text) : async ?Product {
+  public query func getProduct(id : Text) : async ?Product {
     productMap.get(id);
   };
 
-  public query ({ caller }) func getAllProducts() : async [Product] {
+  public query func getAllProducts() : async [Product] {
     productMap.values().toArray();
   };
 
-  public query ({ caller }) func getActiveProducts() : async [Product] {
+  public query func getActiveProducts() : async [Product] {
     productMap.values().toArray().filter(func(p) { p.isActive });
+  };
+
+  public query func getProductsByCategory(category : Text) : async [Product] {
+    if (not categoryMap.containsKey(category)) {
+      return [];
+    };
+    productMap.values().toArray().filter(func(p) { p.isActive and p.category == category });
   };
 
   // Cart & Order Management
@@ -237,9 +294,7 @@ actor {
     address : Text,
     cart : [CartItem],
   ) : async () {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Can't create an order as guest ");
-    };
+    ensureUser(caller);
 
     let orderItems = cart.map(func(cartItem) {
       switch (productMap.get(cartItem.productId)) {
@@ -326,12 +381,12 @@ actor {
   };
 
   // Store Info
-  public query ({ caller }) func getStoreInfo() : async StoreInfo {
+  public query func getStoreInfo() : async StoreInfo {
     storeInfo;
   };
 
   // Product Stats & Analytics
-  public query ({ caller }) func getProductStats(id : Text) : async ?ProductStats {
+  public query func getProductStats(id : Text) : async ?ProductStats {
     productStatsMap.get(id);
   };
 
@@ -415,7 +470,7 @@ actor {
     featuredProductIds := ids;
   };
 
-  public query ({ caller }) func getFeaturedProducts() : async [Product] {
+  public query func getFeaturedProducts() : async [Product] {
     featuredProductIds.map(func(id) {
       switch (productMap.get(id)) {
         case (null) { Runtime.trap("Featured product not found") };

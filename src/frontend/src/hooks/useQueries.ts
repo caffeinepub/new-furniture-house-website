@@ -59,6 +59,54 @@ export function useIsCallerAdmin() {
   });
 }
 
+// Category Queries
+export function useGetAllCategories() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<string[]>({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllCategories();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useAddCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addCategory(name);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['allProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeProducts'] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteCategory(name);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['allProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeProducts'] });
+    },
+  });
+}
+
 // Product Queries
 export function useGetActiveProducts() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -111,9 +159,17 @@ export function useAddProduct() {
       description: string;
       price: bigint;
       offer: string | null;
+      category: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addProduct(params.id, params.name, params.description, params.price, params.offer);
+      return actor.addProduct(
+        params.id,
+        params.name,
+        params.description,
+        params.price,
+        params.offer,
+        params.category
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allProducts'] });
@@ -133,6 +189,7 @@ export function useUpdateProduct() {
       description: string;
       price: bigint;
       offer: string | null;
+      category: string;
       isActive: boolean;
     }) => {
       if (!actor) throw new Error('Actor not available');
@@ -142,6 +199,7 @@ export function useUpdateProduct() {
         params.description,
         params.price,
         params.offer,
+        params.category,
         params.isActive
       );
     },

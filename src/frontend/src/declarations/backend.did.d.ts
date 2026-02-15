@@ -41,6 +41,7 @@ export interface Product {
   'description' : string,
   'isActive' : boolean,
   'updatedAt' : Time,
+  'category' : string,
   'price' : bigint,
   'videos' : Array<ExternalBlob>,
   'images' : Array<ExternalBlob>,
@@ -97,8 +98,9 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addCategory' : ActorMethod<[string], undefined>,
   'addProduct' : ActorMethod<
-    [string, string, string, bigint, [] | [string]],
+    [string, string, string, bigint, [] | [string], string],
     undefined
   >,
   'addToWishlist' : ActorMethod<[string], undefined>,
@@ -107,8 +109,10 @@ export interface _SERVICE {
     [string, string, string, string, Array<CartItem>],
     undefined
   >,
+  'deleteCategory' : ActorMethod<[string], undefined>,
   'getActiveOrders' : ActorMethod<[], Array<Order>>,
   'getActiveProducts' : ActorMethod<[], Array<Product>>,
+  'getAllCategories' : ActorMethod<[], Array<string>>,
   'getAllOrders' : ActorMethod<[], Array<Order>>,
   'getAllProductStats' : ActorMethod<[], Array<ProductStats>>,
   'getAllProducts' : ActorMethod<[], Array<Product>>,
@@ -120,6 +124,7 @@ export interface _SERVICE {
   'getOrder' : ActorMethod<[string], Order>,
   'getProduct' : ActorMethod<[string], [] | [Product]>,
   'getProductStats' : ActorMethod<[string], [] | [ProductStats]>,
+  'getProductsByCategory' : ActorMethod<[string], Array<Product>>,
   'getStoreInfo' : ActorMethod<[], StoreInfo>,
   'getSystemStats' : ActorMethod<
     [],
@@ -140,7 +145,7 @@ export interface _SERVICE {
   'setFeaturedProducts' : ActorMethod<[Array<string>], undefined>,
   'updateOrderStatus' : ActorMethod<[string, OrderStatus], undefined>,
   'updateProduct' : ActorMethod<
-    [string, string, string, bigint, [] | [string], boolean],
+    [string, string, string, bigint, [] | [string], string, boolean],
     undefined
   >,
   'updateProductMedia' : ActorMethod<

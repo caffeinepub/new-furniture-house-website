@@ -1,70 +1,24 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-03T16:17:45.726Z",
+  "generatedAt": "2026-02-09T09:01:24.337Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Implement hash-based routing in the React app so the Admin Panel is reachable via a stable URL (e.g., `#/admin`) and not only via in-memory `currentView` state. Supported routes must include at minimum: `#/` (home), `#/admin`, `#/orders`, `#/checkout`, and `#/product/<productId>`.",
+        "summary": "Update the Admin navigation entry in the header so that when the current user is an admin, the Admin Panel entry point is rendered as a clear, high-visibility deep pink button (not a subtle/ghost link). Apply this styling for both the desktop navigation and the mobile menu entry.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/hashRoutes.ts",
-          "frontend/src/hooks/useHashRoute.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/components/Header.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/hashRoutes.ts",
-          "frontend/src/hooks/useHashRoute.ts",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Update all in-app navigation that currently uses `setCurrentView(...)` (Header/Footer buttons and any other view transitions) to also update the URL hash to the corresponding route so users can bookmark/share the Admin Panel and other pages.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/components/Header.tsx",
-          "frontend/src/components/Footer.tsx",
-          "frontend/src/pages/ProductDetailPage.tsx",
-          "frontend/src/pages/MyOrdersPage.tsx",
-          "frontend/src/pages/CheckoutPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "When a user navigates to `#/admin` and they are not authenticated or not an admin, render a clear, persistent page-level message (not just a toast) explaining why access is blocked, with an obvious action to return to Home and a Login action if unauthenticated.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AdminAccessBlockedPage.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AdminAccessBlockedPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Add a simple Not Found view for unknown hashes (e.g., `#/does-not-exist`) that tells the user the page was not found and provides a button to go back to Home.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/NotFoundPage.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/NotFoundPage.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/components/Header.tsx"
         ]
       }
     ]
@@ -74,11 +28,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/hooks/useHashRoute.ts",
-    "frontend/src/pages/AdminAccessBlockedPage.tsx",
-    "frontend/src/pages/NotFoundPage.tsx",
-    "frontend/src/utils/hashRoutes.ts",
+    "frontend/src/components/Header.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -80,9 +80,12 @@ export default function Header({
             </Button>
           )}
           {isAdmin && (
-            <Button variant="ghost" onClick={onNavigateAdmin} className="text-sm font-medium">
+            <Button
+              onClick={onNavigateAdmin}
+              className="text-sm font-semibold bg-[#FF1493] hover:bg-[#E6127F] text-white shadow-md hover:shadow-lg transition-all focus-visible:ring-2 focus-visible:ring-[#FF1493] focus-visible:ring-offset-2"
+            >
               <Shield className="mr-2 h-4 w-4" />
-              Admin
+              Admin Panel
             </Button>
           )}
         </nav>
@@ -209,7 +212,10 @@ export default function Header({
                   </Button>
                 )}
                 {isAdmin && (
-                  <Button variant="ghost" onClick={onNavigateAdmin} className="justify-start">
+                  <Button
+                    onClick={onNavigateAdmin}
+                    className="justify-start bg-[#FF1493] hover:bg-[#E6127F] text-white font-semibold shadow-md hover:shadow-lg transition-all focus-visible:ring-2 focus-visible:ring-[#FF1493] focus-visible:ring-offset-2"
+                  >
                     <Shield className="mr-2 h-4 w-4" />
                     Admin Panel
                   </Button>

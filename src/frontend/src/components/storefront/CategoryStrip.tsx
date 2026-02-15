@@ -1,18 +1,22 @@
-import { Sofa, Armchair, Table2, Bed } from 'lucide-react';
-
-const categories = [
-  { name: 'Sofas', icon: Sofa },
-  { name: 'Chairs', icon: Armchair },
-  { name: 'Tables', icon: Table2 },
-  { name: 'Beds', icon: Bed },
-];
+import { Sofa, Armchair, Table2, Bed, Package } from 'lucide-react';
 
 interface CategoryStripProps {
+  categories: string[];
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
 }
 
-export default function CategoryStrip({ selectedCategory, onSelectCategory }: CategoryStripProps) {
+// Map known category names to icons with a fallback
+const getCategoryIcon = (categoryName: string) => {
+  const name = categoryName.toLowerCase();
+  if (name.includes('sofa')) return Sofa;
+  if (name.includes('chair')) return Armchair;
+  if (name.includes('table')) return Table2;
+  if (name.includes('bed')) return Bed;
+  return Package; // Default icon for unknown categories
+};
+
+export default function CategoryStrip({ categories, selectedCategory, onSelectCategory }: CategoryStripProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
       {/* All Categories Option */}
@@ -35,14 +39,14 @@ export default function CategoryStrip({ selectedCategory, onSelectCategory }: Ca
         <span className="text-sm font-medium">All</span>
       </button>
 
-      {/* Category Options */}
+      {/* Dynamic Category Options from Backend */}
       {categories.map((category) => {
-        const Icon = category.icon;
-        const isSelected = selectedCategory === category.name;
+        const Icon = getCategoryIcon(category);
+        const isSelected = selectedCategory?.toLowerCase() === category.toLowerCase();
         return (
           <button
-            key={category.name}
-            onClick={() => onSelectCategory(category.name)}
+            key={category}
+            onClick={() => onSelectCategory(category)}
             className={`flex flex-col items-center justify-center p-6 rounded border transition-all ${
               isSelected
                 ? 'bg-primary text-primary-foreground border-primary shadow-md'
@@ -54,7 +58,7 @@ export default function CategoryStrip({ selectedCategory, onSelectCategory }: Ca
                 isSelected ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary'
               }`}
             />
-            <span className="text-sm font-medium">{category.name}</span>
+            <span className="text-sm font-medium">{category}</span>
           </button>
         );
       })}

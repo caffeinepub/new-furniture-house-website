@@ -1,91 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Fix missing Admin Panel by adding URL routing and clear access states",
-  "priority": "high",
+  "title": "Make Admin Panel button clear and deep pink for admins",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement hash-based routing in the React app so the Admin Panel is reachable via a stable URL (e.g., `#/admin`) and not only via in-memory `currentView` state. Supported routes must include at minimum: `#/` (home), `#/admin`, `#/orders`, `#/checkout`, and `#/product/<productId>`.",
+      "text": "Update the Admin navigation entry in the header so that when the current user is an admin, the Admin Panel entry point is rendered as a clear, high-visibility deep pink button (not a subtle/ghost link). Apply this styling for both the desktop navigation and the mobile menu entry.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Admin panel not found."
+          "Make clear & visible Admin Panel in deep pink color button"
         ]
       },
       "acceptanceCriteria": [
-        "Loading the app at `#/admin` displays the Admin Panel for an authenticated admin user.",
-        "Loading the app at `#/orders` displays the My Orders page for an authenticated user.",
-        "Loading the app at `#/product/<productId>` displays the Product Detail page for that product id.",
-        "Refreshing the browser while on any supported route keeps the user on the same view after reload."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Update all in-app navigation that currently uses `setCurrentView(...)` (Header/Footer buttons and any other view transitions) to also update the URL hash to the corresponding route so users can bookmark/share the Admin Panel and other pages.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Admin panel not found."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Clicking the Admin navigation control updates the URL hash to `#/admin` (for admin users).",
-        "Clicking the Orders navigation control updates the URL hash to `#/orders`.",
-        "Clicking Back/Home controls updates the URL hash to `#/`.",
-        "Navigating via browser Back/Forward buttons moves between views correctly."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "When a user navigates to `#/admin` and they are not authenticated or not an admin, render a clear, persistent page-level message (not just a toast) explaining why access is blocked, with an obvious action to return to Home and a Login action if unauthenticated.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Admin panel not found."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Unauthenticated users visiting `#/admin` see an on-page message indicating login is required and can trigger login from that screen.",
-        "Authenticated non-admin users visiting `#/admin` see an on-page message indicating admin access is required.",
-        "The app does not display a blank main content area in these cases."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add a simple Not Found view for unknown hashes (e.g., `#/does-not-exist`) that tells the user the page was not found and provides a button to go back to Home.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Admin panel not found."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Visiting an unknown hash renders a Not Found screen with English user-facing text.",
-        "From the Not Found screen, the user can navigate back to `#/`."
+        "When `isAdmin === true`, the header shows an \"Admin Panel\" button with a deep pink background (e.g., hex #FF1493 or equivalent Tailwind arbitrary color) and readable high-contrast text.",
+        "The desktop header Admin button is visually distinct from other nav items (not `variant=\"ghost\"`) and is immediately noticeable.",
+        "The mobile menu Admin Panel entry uses the same deep pink button styling and remains readable.",
+        "Hover/active/focus states preserve deep pink styling and include an accessible focus indicator.",
+        "When `isAdmin === false`, the Admin button is not shown (existing access logic remains unchanged)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/components/ui`.",
-    "Do not edit any files listed in `frontend.immutablePaths` in SYSTEM_CONTEXT.",
-    "Keep the backend as a single Motoko actor; no backend changes are required for this request."
+    "Do not modify any files under frontend/src/components/ui (shadcn components are read-only).",
+    "Keep existing admin access control behavior (Admin Panel route remains restricted to admins)."
   ],
   "nonGoals": [
-    "Adding new admin capabilities beyond the existing AdminPanel tabs (products/orders).",
-    "Implementing third-party authentication or any non-Internet-Identity auth mechanism.",
-    "Reworking product, cart, or checkout business logic."
+    "Changing admin authorization rules or backend admin detection logic.",
+    "Adding new admin features inside the Admin Panel page.",
+    "Changing the routing scheme (hash routes) for the Admin Panel."
   ],
   "imageRequirements": {
     "required": [],

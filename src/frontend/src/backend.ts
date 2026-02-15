@@ -145,6 +145,7 @@ export interface Product {
     description: string;
     isActive: boolean;
     updatedAt: Time;
+    category: string;
     price: bigint;
     videos: Array<ExternalBlob>;
     images: Array<ExternalBlob>;
@@ -173,12 +174,15 @@ export interface backendInterface {
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    addProduct(id: string, name: string, description: string, price: bigint, offer: string | null): Promise<void>;
+    addCategory(name: string): Promise<void>;
+    addProduct(id: string, name: string, description: string, price: bigint, offer: string | null, category: string): Promise<void>;
     addToWishlist(productId: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createOrder(id: string, name: string, phone: string, address: string, cart: Array<CartItem>): Promise<void>;
+    deleteCategory(name: string): Promise<void>;
     getActiveOrders(): Promise<Array<Order>>;
     getActiveProducts(): Promise<Array<Product>>;
+    getAllCategories(): Promise<Array<string>>;
     getAllOrders(): Promise<Array<Order>>;
     getAllProductStats(): Promise<Array<ProductStats>>;
     getAllProducts(): Promise<Array<Product>>;
@@ -190,6 +194,7 @@ export interface backendInterface {
     getOrder(id: string): Promise<Order>;
     getProduct(id: string): Promise<Product | null>;
     getProductStats(id: string): Promise<ProductStats | null>;
+    getProductsByCategory(category: string): Promise<Array<Product>>;
     getStoreInfo(): Promise<StoreInfo>;
     getSystemStats(): Promise<{
         totalProducts: bigint;
@@ -206,7 +211,7 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setFeaturedProducts(ids: Array<string>): Promise<void>;
     updateOrderStatus(orderId: string, status: OrderStatus): Promise<void>;
-    updateProduct(id: string, name: string, description: string, price: bigint, offer: string | null, isActive: boolean): Promise<void>;
+    updateProduct(id: string, name: string, description: string, price: bigint, offer: string | null, category: string, isActive: boolean): Promise<void>;
     updateProductMedia(productId: string, images: Array<ExternalBlob>, videos: Array<ExternalBlob>): Promise<void>;
 }
 import type { ExternalBlob as _ExternalBlob, Order as _Order, OrderItem as _OrderItem, OrderStatus as _OrderStatus, Product as _Product, ProductStats as _ProductStats, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
@@ -310,17 +315,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addProduct(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string | null): Promise<void> {
+    async addCategory(arg0: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4));
+                const result = await this.actor.addCategory(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4));
+            const result = await this.actor.addCategory(arg0);
+            return result;
+        }
+    }
+    async addProduct(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string | null, arg5: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5);
             return result;
         }
     }
@@ -366,6 +385,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteCategory(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteCategory(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteCategory(arg0);
+            return result;
+        }
+    }
     async getActiveOrders(): Promise<Array<Order>> {
         if (this.processError) {
             try {
@@ -392,6 +425,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getActiveProducts();
             return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllCategories(): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllCategories();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllCategories();
+            return result;
         }
     }
     async getAllOrders(): Promise<Array<Order>> {
@@ -548,6 +595,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n28(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getProductsByCategory(arg0: string): Promise<Array<Product>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProductsByCategory(arg0);
+                return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProductsByCategory(arg0);
+            return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getStoreInfo(): Promise<StoreInfo> {
         if (this.processError) {
             try {
@@ -694,17 +755,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateProduct(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string | null, arg5: boolean): Promise<void> {
+    async updateProduct(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string | null, arg5: string, arg6: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5);
+                const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5, arg6);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5);
+            const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, to_candid_opt_n8(this._uploadFile, this._downloadFile, arg4), arg5, arg6);
             return result;
         }
     }
@@ -806,6 +867,7 @@ async function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promi
     description: string;
     isActive: boolean;
     updatedAt: _Time;
+    category: string;
     price: bigint;
     videos: Array<_ExternalBlob>;
     images: Array<_ExternalBlob>;
@@ -817,6 +879,7 @@ async function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promi
     description: string;
     isActive: boolean;
     updatedAt: Time;
+    category: string;
     price: bigint;
     videos: Array<ExternalBlob>;
     images: Array<ExternalBlob>;
@@ -829,6 +892,7 @@ async function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promi
         description: value.description,
         isActive: value.isActive,
         updatedAt: value.updatedAt,
+        category: value.category,
         price: value.price,
         videos: await from_candid_vec_n20(_uploadFile, _downloadFile, value.videos),
         images: await from_candid_vec_n20(_uploadFile, _downloadFile, value.images)

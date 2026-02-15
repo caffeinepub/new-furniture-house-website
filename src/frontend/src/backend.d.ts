@@ -59,6 +59,7 @@ export interface Product {
     description: string;
     isActive: boolean;
     updatedAt: Time;
+    category: string;
     price: bigint;
     videos: Array<ExternalBlob>;
     images: Array<ExternalBlob>;
@@ -80,12 +81,15 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    addProduct(id: string, name: string, description: string, price: bigint, offer: string | null): Promise<void>;
+    addCategory(name: string): Promise<void>;
+    addProduct(id: string, name: string, description: string, price: bigint, offer: string | null, category: string): Promise<void>;
     addToWishlist(productId: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createOrder(id: string, name: string, phone: string, address: string, cart: Array<CartItem>): Promise<void>;
+    deleteCategory(name: string): Promise<void>;
     getActiveOrders(): Promise<Array<Order>>;
     getActiveProducts(): Promise<Array<Product>>;
+    getAllCategories(): Promise<Array<string>>;
     getAllOrders(): Promise<Array<Order>>;
     getAllProductStats(): Promise<Array<ProductStats>>;
     getAllProducts(): Promise<Array<Product>>;
@@ -97,6 +101,7 @@ export interface backendInterface {
     getOrder(id: string): Promise<Order>;
     getProduct(id: string): Promise<Product | null>;
     getProductStats(id: string): Promise<ProductStats | null>;
+    getProductsByCategory(category: string): Promise<Array<Product>>;
     getStoreInfo(): Promise<StoreInfo>;
     getSystemStats(): Promise<{
         totalProducts: bigint;
@@ -113,6 +118,6 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setFeaturedProducts(ids: Array<string>): Promise<void>;
     updateOrderStatus(orderId: string, status: OrderStatus): Promise<void>;
-    updateProduct(id: string, name: string, description: string, price: bigint, offer: string | null, isActive: boolean): Promise<void>;
+    updateProduct(id: string, name: string, description: string, price: bigint, offer: string | null, category: string, isActive: boolean): Promise<void>;
     updateProductMedia(productId: string, images: Array<ExternalBlob>, videos: Array<ExternalBlob>): Promise<void>;
 }

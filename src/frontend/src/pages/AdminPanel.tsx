@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -16,12 +16,25 @@ import {
   useUpdateProductMedia,
   useGetAllOrders,
   useUpdateOrderStatus,
+  useGetAllCategories,
+  useAddCategory,
+  useDeleteCategory,
 } from '../hooks/useQueries';
 import { toast } from 'sonner';
 import { ExternalBlob, OrderStatus } from '../backend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Progress } from '../components/ui/progress';
 import { Separator } from '../components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -61,6 +74,11 @@ function ProductsTab() {
   const { data: products, isLoading } = useGetAllProducts();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
+  const normalizeCategory = (category: string | undefined | null): string => {
+    if (!category || category.trim() === '') return 'Uncategorized';
+    return category;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -92,6 +110,7 @@ function ProductsTab() {
                   <div className="flex-1">
                     <CardTitle className="flex items-center gap-2 flex-wrap mb-2">
                       <span>{product.name}</span>
+                      <Badge variant="outline">{normalizeCategory(product.category)}</Badge>
                       {!product.isActive && <Badge variant="secondary">Inactive</Badge>}
                       {product.offer && <Badge variant="destructive">{product.offer}</Badge>}
                     </CardTitle>
@@ -152,18 +171,40 @@ function ProductsTab() {
 
 function AddProductForm() {
   const addProduct = useAddProduct();
+  const { data: categories } = useGetAllCategories();
+  const addCategory = useAddCategory();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     offer: '',
+    category: '',
   });
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+
+    try {
+      await addCategory.mutateAsync(newCategoryName.trim());
+      setFormData({ ...formData, category: newCategoryName.trim() });
+      setNewCategoryName('');
+      setShowNewCategory(false);
+      toast.success('Category added successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add category');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.description.trim() || !formData.price) {
-      toast.error('Please fill in all required fields (Name, Description, Price)');
+    if (!formData.name.trim() || !formData.description.trim() || !formData.price || !formData.category) {
+      toast.error('Please fill in all required fields (Name, Description, Price, Category)');
       return;
     }
 
@@ -181,12 +222,13 @@ function AddProductForm() {
         description: formData.description.trim(),
         price: BigInt(Math.round(priceValue)),
         offer: formData.offer.trim() || null,
+        category: formData.category,
       });
 
-      toast.success('Product added successfully! You can now upload images.');
-      setFormData({ name: '', description: '', price: '', offer: '' });
-    } catch (error) {
-      toast.error('Failed to add product');
+      toast.success('Product added successfully! You can now upload images and videos.');
+      setFormData({ name: '', description: '', price: '', offer: '', category: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add product');
       console.error(error);
     }
   };
@@ -219,6 +261,50 @@ function AddProductForm() {
           rows={4}
           required
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category" className="text-sm font-semibold">
+          Category <span className="text-destructive">*</span>
+        </Label>
+        {!showNewCategory ? (
+          <div className="flex gap-2">
+            <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories && categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground">No categories available</div>
+                )}
+              </SelectContent>
+            </Select>
+            <Button type="button" variant="outline" onClick={() => setShowNewCategory(true)}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="New category name"
+              className="h-11"
+            />
+            <Button type="button" onClick={handleAddCategory} disabled={addCategory.isPending}>
+              Add
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setShowNewCategory(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -256,7 +342,9 @@ function AddProductForm() {
       <div className="bg-muted/50 p-4 rounded text-sm text-muted-foreground">
         <p className="flex items-start gap-2">
           <ImageIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>After creating the product, you can upload images and videos by clicking "Edit" on the product card.</span>
+          <span>
+            After creating the product, you can upload images and videos by clicking "Edit" on the product card.
+          </span>
         </p>
       </div>
 
@@ -270,20 +358,42 @@ function AddProductForm() {
 function EditProductForm({ product, onClose }: { product: any; onClose: () => void }) {
   const updateProduct = useUpdateProduct();
   const updateMedia = useUpdateProductMedia();
+  const { data: categories } = useGetAllCategories();
+  const addCategory = useAddCategory();
   const [formData, setFormData] = useState({
     name: product.name,
     description: product.description,
     price: Number(product.price).toString(),
     offer: product.offer || '',
+    category: product.category || '',
     isActive: product.isActive,
   });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+
+    try {
+      await addCategory.mutateAsync(newCategoryName.trim());
+      setFormData({ ...formData, category: newCategoryName.trim() });
+      setNewCategoryName('');
+      setShowNewCategory(false);
+      toast.success('Category added successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add category');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.description.trim() || !formData.price) {
+    if (!formData.name.trim() || !formData.description.trim() || !formData.price || !formData.category) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -301,253 +411,337 @@ function EditProductForm({ product, onClose }: { product: any; onClose: () => vo
         description: formData.description.trim(),
         price: BigInt(Math.round(priceValue)),
         offer: formData.offer.trim() || null,
+        category: formData.category,
         isActive: formData.isActive,
       });
 
-      toast.success('Product updated successfully!');
+      toast.success('Product updated successfully');
       onClose();
-    } catch (error) {
-      toast.error('Failed to update product');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update product');
       console.error(error);
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-    if (imageFiles.length === 0) {
-      toast.error('Please select image files');
-      return;
-    }
-
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      const newImages: ExternalBlob[] = [];
-      
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const blob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-          const overallProgress = ((i / imageFiles.length) * 100) + (percentage / imageFiles.length);
-          setUploadProgress(Math.round(overallProgress));
+      const newBlobs: ExternalBlob[] = [];
+      const totalFiles = files.length;
+
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const blob = ExternalBlob.fromBytes(bytes).withUploadProgress((percentage) => {
+          const fileProgress = (i / totalFiles) * 100 + percentage / totalFiles;
+          setUploadProgress(Math.round(fileProgress));
         });
-        newImages.push(blob);
+        newBlobs.push(blob);
       }
 
-      const updatedImages = [...product.images, ...newImages];
+      const currentImages = type === 'image' ? [...product.images, ...newBlobs] : product.images;
+      const currentVideos = type === 'video' ? [...product.videos, ...newBlobs] : product.videos;
+
       await updateMedia.mutateAsync({
         productId: product.id,
-        images: updatedImages,
-        videos: product.videos,
+        images: currentImages,
+        videos: currentVideos,
       });
 
-      toast.success(`${imageFiles.length} image(s) uploaded successfully!`);
+      toast.success(`${type === 'image' ? 'Images' : 'Videos'} uploaded successfully`);
       setUploadProgress(0);
+    } catch (error) {
+      toast.error(`Failed to upload ${type === 'image' ? 'images' : 'videos'}`);
+      console.error(error);
+    } finally {
       setIsUploading(false);
       e.target.value = '';
-    } catch (error) {
-      toast.error('Failed to upload images');
-      console.error(error);
-      setUploadProgress(0);
-      setIsUploading(false);
     }
   };
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('video/')) {
-      toast.error('Please select a video file');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
+  const handleRemoveMedia = async (index: number, type: 'image' | 'video') => {
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-        setUploadProgress(percentage);
-      });
+      const newImages = type === 'image' ? product.images.filter((_: any, i: number) => i !== index) : product.images;
+      const newVideos = type === 'video' ? product.videos.filter((_: any, i: number) => i !== index) : product.videos;
 
-      const updatedVideos = [...product.videos, blob];
       await updateMedia.mutateAsync({
         productId: product.id,
-        images: product.images,
-        videos: updatedVideos,
+        images: newImages,
+        videos: newVideos,
       });
 
-      toast.success('Video uploaded successfully!');
-      setUploadProgress(0);
-      setIsUploading(false);
-      e.target.value = '';
+      toast.success(`${type === 'image' ? 'Image' : 'Video'} removed successfully`);
     } catch (error) {
-      toast.error('Failed to upload video');
+      toast.error(`Failed to remove ${type === 'image' ? 'image' : 'video'}`);
       console.error(error);
-      setUploadProgress(0);
-      setIsUploading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="edit-name" className="text-sm font-semibold">
+          Product Name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="edit-name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="e.g., Modern Sofa Set"
+          className="h-11"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-description" className="text-sm font-semibold">
+          Description <span className="text-destructive">*</span>
+        </Label>
+        <Textarea
+          id="edit-description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Describe the product features, materials, dimensions..."
+          rows={4}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-category" className="text-sm font-semibold">
+          Category <span className="text-destructive">*</span>
+        </Label>
+        {!showNewCategory ? (
+          <div className="flex gap-2">
+            <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories && categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground">No categories available</div>
+                )}
+              </SelectContent>
+            </Select>
+            <Button type="button" variant="outline" onClick={() => setShowNewCategory(true)}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="New category name"
+              className="h-11"
+            />
+            <Button type="button" onClick={handleAddCategory} disabled={addCategory.isPending}>
+              Add
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setShowNewCategory(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="edit-name" className="text-sm font-semibold">
-            Product Name <span className="text-destructive">*</span>
+          <Label htmlFor="edit-price" className="text-sm font-semibold">
+            Price (₹) <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="edit-name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            id="edit-price"
+            type="number"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            placeholder="e.g., 25000"
             className="h-11"
+            min="0"
+            step="1"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="edit-description" className="text-sm font-semibold">
-            Description <span className="text-destructive">*</span>
+          <Label htmlFor="edit-offer" className="text-sm font-semibold">
+            Offer <span className="text-muted-foreground text-xs">(Optional)</span>
           </Label>
-          <Textarea
-            id="edit-description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={4}
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-price" className="text-sm font-semibold">
-              Price (₹) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="edit-price"
-              type="number"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="h-11"
-              min="0"
-              step="1"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-offer" className="text-sm font-semibold">
-              Offer <span className="text-muted-foreground text-xs">(Optional)</span>
-            </Label>
-            <Input
-              id="edit-offer"
-              value={formData.offer}
-              onChange={(e) => setFormData({ ...formData, offer: e.target.value })}
-              className="h-11"
-              placeholder="e.g., 20% OFF"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between py-2">
-          <Label htmlFor="edit-active" className="text-sm font-semibold">
-            Product Active
-          </Label>
-          <Switch
-            id="edit-active"
-            checked={formData.isActive}
-            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+          <Input
+            id="edit-offer"
+            value={formData.offer}
+            onChange={(e) => setFormData({ ...formData, offer: e.target.value })}
+            placeholder="e.g., 20% OFF"
+            className="h-11"
           />
         </div>
       </div>
 
+      <div className="flex items-center justify-between p-4 border rounded">
+        <div>
+          <Label htmlFor="edit-active" className="text-sm font-semibold">
+            Product Status
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            {formData.isActive ? 'Visible to customers' : 'Hidden from storefront'}
+          </p>
+        </div>
+        <Switch
+          id="edit-active"
+          checked={formData.isActive}
+          onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+        />
+      </div>
+
       <Separator />
 
+      {/* Media Upload Section */}
       <div className="space-y-4">
         <div>
-          <Label className="text-sm font-semibold mb-2 block">Upload Product Images</Label>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Input
+          <h3 className="text-lg font-semibold mb-2">Media (Images & Videos)</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Upload product images and videos to showcase your furniture. Images help customers see details, while videos
+            can demonstrate features and quality.
+          </p>
+        </div>
+
+        {/* Images Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Product Images
+            </Label>
+            <label htmlFor="image-upload">
+              <Button type="button" variant="outline" size="sm" disabled={isUploading} asChild>
+                <span>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Images
+                </span>
+              </Button>
+              <input
+                id="image-upload"
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={handleImageUpload}
+                onChange={(e) => handleMediaUpload(e, 'image')}
+                className="hidden"
                 disabled={isUploading}
-                className="cursor-pointer h-11"
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={isUploading}
-                onClick={() => document.querySelector<HTMLInputElement>('input[type="file"][accept="image/*"]')?.click()}
-              >
-                <Upload className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Select multiple images to upload at once. Supported formats: JPG, PNG, WebP
-            </p>
+            </label>
           </div>
-          {product.images.length > 0 && (
-            <div className="flex gap-2 mt-3 flex-wrap">
+
+          {product.images.length > 0 ? (
+            <div className="grid grid-cols-3 gap-3">
               {product.images.map((img: any, idx: number) => (
                 <div key={idx} className="relative group">
                   <img
                     src={img.getDirectURL()}
-                    alt=""
-                    className="w-20 h-20 object-cover rounded border"
+                    alt={`Product ${idx + 1}`}
+                    className="w-full h-32 object-cover rounded border"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                    <span className="text-white text-xs">#{idx + 1}</span>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveMedia(idx, 'image')}
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded p-8 text-center text-sm text-muted-foreground">
+              No images uploaded yet. Click "Upload Images" to add product photos.
             </div>
           )}
         </div>
 
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">Upload Product Videos</Label>
-          <div className="space-y-3">
-            <Input
-              type="file"
-              accept="video/*"
-              onChange={handleVideoUpload}
-              disabled={isUploading}
-              className="cursor-pointer h-11"
-            />
-            <p className="text-xs text-muted-foreground">
-              Upload product demonstration videos. Supported formats: MP4, WebM
-            </p>
+        {/* Videos Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Video className="h-4 w-4" />
+              Product Videos
+            </Label>
+            <label htmlFor="video-upload">
+              <Button type="button" variant="outline" size="sm" disabled={isUploading} asChild>
+                <span>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Video
+                </span>
+              </Button>
+              <input
+                id="video-upload"
+                type="file"
+                accept="video/*"
+                onChange={(e) => handleMediaUpload(e, 'video')}
+                className="hidden"
+                disabled={isUploading}
+              />
+            </label>
           </div>
-          {product.videos.length > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">{product.videos.length} video(s) uploaded</p>
+
+          {product.videos.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {product.videos.map((vid: any, idx: number) => (
+                <div key={idx} className="relative group">
+                  <video src={vid.getDirectURL()} className="w-full h-32 object-cover rounded border" controls />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveMedia(idx, 'video')}
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded p-8 text-center text-sm text-muted-foreground">
+              No videos uploaded yet. Click "Upload Video" to add a product video.
+            </div>
           )}
         </div>
 
-        {uploadProgress > 0 && uploadProgress < 100 && (
+        {isUploading && (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Upload Progress</Label>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Uploading...</span>
+              <span className="font-medium">{uploadProgress}%</span>
+            </div>
             <Progress value={uploadProgress} />
-            <p className="text-sm text-muted-foreground text-center">{uploadProgress}%</p>
           </div>
         )}
       </div>
 
       <Separator />
 
-      <Button type="submit" className="w-full h-11" disabled={updateProduct.isPending || isUploading}>
-        {updateProduct.isPending ? 'Updating Product...' : 'Update Product'}
-      </Button>
+      <div className="flex gap-3">
+        <Button type="submit" className="flex-1 h-11" disabled={updateProduct.isPending || isUploading}>
+          {updateProduct.isPending ? 'Saving Changes...' : 'Save Changes'}
+        </Button>
+        <Button type="button" variant="outline" onClick={onClose} className="h-11" disabled={isUploading}>
+          Cancel
+        </Button>
+      </div>
     </form>
   );
 }
@@ -556,32 +750,9 @@ function OrdersTab() {
   const { data: orders, isLoading } = useGetAllOrders();
   const updateStatus = useUpdateOrderStatus();
 
-  const handleStatusChange = async (orderId: string, statusValue: string) => {
+  const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
-      let status: OrderStatus;
-      
-      switch (statusValue) {
-        case 'pending':
-          status = OrderStatus.pending;
-          break;
-        case 'processing':
-          status = OrderStatus.processing;
-          break;
-        case 'delivered':
-          status = OrderStatus.delivered;
-          break;
-        case 'cancelled':
-          status = OrderStatus.cancelled;
-          break;
-        default:
-          toast.error('Invalid status');
-          return;
-      }
-
-      await updateStatus.mutateAsync({
-        orderId,
-        status,
-      });
+      await updateStatus.mutateAsync({ orderId, status });
       toast.success('Order status updated');
     } catch (error) {
       toast.error('Failed to update order status');
@@ -589,18 +760,18 @@ function OrdersTab() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeVariant = (status: OrderStatus): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-500 hover:bg-yellow-500';
-      case 'processing':
-        return 'bg-blue-500 hover:bg-blue-500';
-      case 'delivered':
-        return 'bg-green-500 hover:bg-green-500';
-      case 'cancelled':
-        return 'bg-red-500 hover:bg-red-500';
+      case OrderStatus.pending:
+        return 'secondary';
+      case OrderStatus.processing:
+        return 'default';
+      case OrderStatus.delivered:
+        return 'outline';
+      case OrderStatus.cancelled:
+        return 'destructive';
       default:
-        return 'bg-gray-500 hover:bg-gray-500';
+        return 'default';
     }
   };
 
@@ -613,64 +784,72 @@ function OrdersTab() {
       ) : orders && orders.length > 0 ? (
         <div className="grid gap-6">
           {orders.map((order) => (
-            <Card key={order.id} className="hover:shadow-md transition-shadow">
+            <Card key={order.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-xl mb-2">Order #{order.id.slice(-8)}</CardTitle>
-                    <p className="text-sm text-muted-foreground">Customer: {order.customerName}</p>
+                    <CardTitle className="flex items-center gap-2 mb-2">
+                      <span>Order #{order.id.slice(-8)}</span>
+                      <Badge variant={getStatusBadgeVariant(order.status)}>{order.status}</Badge>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(Number(order.createdAt) / 1000000).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
                   </div>
-                  <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm uppercase tracking-wider">Contact Information</h4>
-                    <p className="text-sm text-muted-foreground">Phone: {order.phone}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">Address: {order.address}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm uppercase tracking-wider">Order Details</h4>
-                    <p className="text-sm text-muted-foreground">{order.items.length} item(s)</p>
-                    <p className="text-2xl font-bold">₹{Number(order.totalPrice).toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider">Items</h4>
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="text-sm text-muted-foreground flex justify-between py-1">
-                      <span>
-                        {item.productId.slice(0, 30)}... (Qty: {item.quantity.toString()})
-                      </span>
-                      <span className="font-medium">₹{Number(item.price).toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center gap-3">
-                  <Label className="text-sm font-semibold">Update Status:</Label>
                   <Select
                     value={order.status}
-                    onValueChange={(value) => handleStatusChange(order.id, value)}
-                    disabled={updateStatus.isPending}
+                    onValueChange={(value) => handleStatusChange(order.id, value as OrderStatus)}
                   >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value={OrderStatus.pending}>Pending</SelectItem>
+                      <SelectItem value={OrderStatus.processing}>Processing</SelectItem>
+                      <SelectItem value={OrderStatus.delivered}>Delivered</SelectItem>
+                      <SelectItem value={OrderStatus.cancelled}>Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-semibold mb-1">Customer</p>
+                    <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                    <p className="text-sm text-muted-foreground">{order.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold mb-1">Delivery Address</p>
+                    <p className="text-sm text-muted-foreground">{order.address}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-semibold mb-2">Items ({order.items.length})</p>
+                  <div className="space-y-2">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {item.productId} × {item.quantity.toString()}
+                        </span>
+                        <span className="font-medium">₹{Number(item.price).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Total</span>
+                  <span className="text-2xl font-bold">₹{Number(order.totalPrice).toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>

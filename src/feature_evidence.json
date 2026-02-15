@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-hash-based-routing-in-the-react-app-so-the-admin-panel-is-reachable-via-a-stable-url-e-g-admin-and-not-only-via-in-memory-currentview-state-supported-routes-must-include-at-minimum-home-admin-orders-checkout-and-product-productid",
-      "featureTitle": "Implement hash-based routing in the React app so the Admin Panel is reachable via a stable URL (e.g., `#/admin`) and not only via in-memory `currentView` state. Supported routes must include at minimum: `#/` (home), `#/admin`, `#/orders`, `#/checkout`, and `#/product/<productId>`.",
+      "featureId": "feature-update-the-admin-navigation-entry-in-the-header-so-that-when-the-current-user-is-an-admin-the-admin-panel-entry-point-is-rendered-as-a-clear-high-visibility-deep-pink-button-not-a-subtle-ghost-link-apply-this-styling-for-both-the-desktop-navigation-and-the-mobile-menu-entry",
+      "featureTitle": "Update the Admin navigation entry in the header so that when the current user is an admin, the Admin Panel entry point is rendered as a clear, high-visibility deep pink button (not a subtle/ghost link). Apply this styling for both the desktop navigation and the mobile menu entry.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useHashRoute.ts",
-        "frontend/src/utils/hashRoutes.ts"
+        "frontend/src/components/Header.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -20,68 +18,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-all-in-app-navigation-that-currently-uses-setcurrentview-header-footer-buttons-and-any-other-view-transitions-to-also-update-the-url-hash-to-the-corresponding-route-so-users-can-bookmark-share-the-admin-panel-and-other-pages",
-      "featureTitle": "Update all in-app navigation that currently uses `setCurrentView(...)` (Header/Footer buttons and any other view transitions) to also update the URL hash to the corresponding route so users can bookmark/share the Admin Panel and other pages.",
-      "files": [
-        "frontend/src/App.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-when-a-user-navigates-to-admin-and-they-are-not-authenticated-or-not-an-admin-render-a-clear-persistent-page-level-message-not-just-a-toast-explaining-why-access-is-blocked-with-an-obvious-action-to-return-to-home-and-a-login-action-if-unauthenticated",
-      "featureTitle": "When a user navigates to `#/admin` and they are not authenticated or not an admin, render a clear, persistent page-level message (not just a toast) explaining why access is blocked, with an obvious action to return to Home and a Login action if unauthenticated.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/AdminAccessBlockedPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-simple-not-found-view-for-unknown-hashes-e-g-does-not-exist-that-tells-the-user-the-page-was-not-found-and-provides-a-button-to-go-back-to-home",
-      "featureTitle": "Add a simple Not Found view for unknown hashes (e.g., `#/does-not-exist`) that tells the user the page was not found and provides a button to go back to Home.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/NotFoundPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

@@ -1,115 +1,23 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Hash-based routing and clear access states for Admin Panel",
+  "title": "Make Admin Panel header entry a deep pink button for admins",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Implement hash-based routing so core views (home/admin/orders/checkout/product detail) are reachable via stable URLs and survive refresh.",
+      "summary": "Render the Admin Panel header navigation entry as a high-visibility deep pink button for admins (desktop + mobile) with accessible interaction states, without changing existing admin gating logic.",
       "acceptanceCriteria": [
-        "Loading the app at `#/admin` displays the Admin Panel for an authenticated admin user.",
-        "Loading the app at `#/orders` displays the My Orders page for an authenticated user.",
-        "Loading the app at `#/product/<productId>` displays the Product Detail page for that product id.",
-        "Refreshing the browser while on any supported route keeps the user on the same view after reload."
+        "When `isAdmin === true`, the header shows an \"Admin Panel\" button with a deep pink background (e.g., hex #FF1493 or equivalent Tailwind arbitrary color) and readable high-contrast text.",
+        "The desktop header Admin button is visually distinct from other nav items (not `variant=\"ghost\"`) and is immediately noticeable.",
+        "The mobile menu Admin Panel entry uses the same deep pink button styling and remains readable.",
+        "Hover/active/focus states preserve deep pink styling and include an accessible focus indicator.",
+        "When `isAdmin === false`, the Admin button is not shown (existing access logic remains unchanged)."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/utils/hashRoutes.ts",
-          "operation": "create",
-          "description": "Add a small hash-route parser/builder that maps `#/`, `#/admin`, `#/orders`, `#/checkout`, and `#/product/<productId>` to a typed route object (and can build hashes back from route data)."
-        },
-        {
-          "path": "frontend/src/hooks/useHashRoute.ts",
-          "operation": "create",
-          "description": "Create a React hook that reads the current `window.location.hash` on mount and subscribes to `hashchange` to keep route state in sync with browser Back/Forward and refresh behavior."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Replace in-memory `currentView`-only navigation with hash-derived routing: read the active route from `useHashRoute`, render Home/Admin/Orders/Checkout/ProductDetail based on the parsed route, and pass the productId from the hash for `#/product/<productId>`."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Update all in-app navigation to set the URL hash for shareable/bookmarkable navigation and correct Back/Forward behavior.",
-      "acceptanceCriteria": [
-        "Clicking the Admin navigation control updates the URL hash to `#/admin` (for admin users).",
-        "Clicking the Orders navigation control updates the URL hash to `#/orders`.",
-        "Clicking Back/Home controls updates the URL hash to `#/`.",
-        "Navigating via browser Back/Forward buttons moves between views correctly."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Update navigation callbacks (home/admin/orders/checkout/product view/back) to set `window.location.hash` (or use the route builder helper) rather than only calling `setCurrentView`, and ensure product cards and CTA flows navigate via `#/product/<productId>` and `#/checkout`."
-        },
         {
           "path": "frontend/src/components/Header.tsx",
           "operation": "modify",
-          "description": "Ensure header navigation actions ultimately update the hash route (via the callbacks provided by App) so Home/Orders/Admin buttons produce `#/`, `#/orders`, and `#/admin` respectively."
-        },
-        {
-          "path": "frontend/src/components/Footer.tsx",
-          "operation": "modify",
-          "description": "Ensure footer sitemap navigation actions ultimately update the hash route (via the callbacks provided by App) so Home/Orders/Admin produce the correct `#/...` hashes."
-        },
-        {
-          "path": "frontend/src/pages/ProductDetailPage.tsx",
-          "operation": "modify",
-          "description": "Update the Back action behavior to navigate to `#/` (via App-provided callback that sets the hash) so browser history and hash routing stay consistent."
-        },
-        {
-          "path": "frontend/src/pages/MyOrdersPage.tsx",
-          "operation": "modify",
-          "description": "Update Back/Browse actions to route via `#/` (through the App callback that sets the hash) for consistent URL-driven navigation."
-        },
-        {
-          "path": "frontend/src/pages/CheckoutPage.tsx",
-          "operation": "modify",
-          "description": "Update Back/Continue Shopping and post-order completion navigation to route via hashes (`#/` and `#/checkout` where applicable) to avoid falling back to view-only state."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Render a clear, persistent page-level access-blocked screen when navigating to `#/admin` without being authenticated or without admin role, including Home and Login actions.",
-      "acceptanceCriteria": [
-        "Unauthenticated users visiting `#/admin` see an on-page message indicating login is required and can trigger login from that screen.",
-        "Authenticated non-admin users visiting `#/admin` see an on-page message indicating admin access is required.",
-        "The app does not display a blank main content area in these cases."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AdminAccessBlockedPage.tsx",
-          "operation": "create",
-          "description": "Create a dedicated page-level blocked-access view for `#/admin` that shows persistent explanatory text and provides clear actions: a Home button that navigates to `#/`, and a Login button when unauthenticated. Use the selected \"authorization\" component guidance to implement an AccessDeniedScreen-style UI; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Remove the current admin 'toast then redirect to home' behavior and instead, when the active route is `#/admin`, render either AdminPanel (admin), or the new AdminAccessBlockedPage (unauthenticated or non-admin), while keeping the rest of the app chrome intact."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add a Not Found view for unknown hashes with a Home navigation action.",
-      "acceptanceCriteria": [
-        "Visiting an unknown hash renders a Not Found screen with English user-facing text.",
-        "From the Not Found screen, the user can navigate back to `#/`."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/NotFoundPage.tsx",
-          "operation": "create",
-          "description": "Create a simple Not Found page that displays English user-facing text indicating the page was not found and includes a button that navigates back to `#/`."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire the NotFoundPage into the hash-based router so any unrecognized hash (e.g., `#/does-not-exist`) renders the Not Found screen instead of falling back to Home or a blank area."
+          "description": "Update the admin-only navigation Button instances (desktop nav and mobile menu) to use a clear deep pink button style (e.g., bg-[#FF1493] with high-contrast text), including hover/active styling that remains deep pink and focus-visible ring styles for accessibility. Keep the existing `isAdmin && (...)` gating unchanged, and do not modify any files under frontend/src/components/ui."
         }
       ]
     }
